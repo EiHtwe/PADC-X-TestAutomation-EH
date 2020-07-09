@@ -1,17 +1,102 @@
 package com.zg.burgerjoint
 
+import android.widget.ImageView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.zg.burgerjoint.data.model.BurgerModel
+import com.zg.burgerjoint.data.model.impls.BurgerModelImpl
+import com.zg.burgerjoint.data.model.impls.MockBurgerModelImpl
+import com.zg.burgerjoint.data.vos.BurgerVO
+import com.zg.burgerjoint.dummy.getDummyBurgers
+import com.zg.burgerjoint.mvp.presenters.impls.MainPresenterImpl
+import com.zg.burgerjoint.mvp.views.MainView
+import io.mockk.MockKAnnotations
+import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.verify
 import org.junit.Test
 
 import org.junit.Assert.*
+import org.junit.Before
+import org.junit.runner.RunWith
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mock
+import org.robolectric.annotation.Config
 
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
-class ExampleUnitTest {
+@RunWith(AndroidJUnit4::class)
+@Config(manifest = Config.NONE)
+class MainPresenterImplTest {
+    private lateinit var mPresenter : MainPresenterImpl
+
+    @RelaxedMockK
+    private lateinit var mView : MainView
+
+    private lateinit var mBurgerModel : BurgerModel
+
+    @Before
+    fun setUpPresenter() {
+        MockKAnnotations.init(this)
+
+        BurgerModelImpl.init(ApplicationProvider.getApplicationContext())
+        mBurgerModel = MockBurgerModelImpl
+        mPresenter = MainPresenterImpl()
+        mPresenter.initPresenter(mView)
+        mPresenter.mBurgerModel = this.mBurgerModel
+    }
+
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun onTapAddToCart_callAddBurgerToCart() {
+        val tappedBurger = BurgerVO()
+        tappedBurger.burgerId = 1
+        tappedBurger.burgerName = "Big Mac"
+        tappedBurger.burgerImageUrl = ""
+        tappedBurger.burgerDescription = "Big Mac Burger"
+        val imageView = ImageView(ApplicationProvider.getApplicationContext())
+        mPresenter.onTapAddToCart(tappedBurger, imageView)
+        verify {
+            mView.addBurgerToCart(tappedBurger, imageView)
+        }
+    }
+
+    @Test
+    fun onTapCart_callNavigateToCartScreen(){
+        mPresenter.onTapCart()
+        verify {
+            mView.navigatetoCartScreen()
+        }
+    }
+
+    @Test
+    fun onTapBurger_callNavigateToBurgerDetail(){
+        val tappedBurger = BurgerVO()
+        tappedBurger.burgerId = 1
+        tappedBurger.burgerName = "Big Mac"
+        tappedBurger.burgerImageUrl = ""
+        tappedBurger.burgerDescription = "Big Mac Burger"
+        val imageView = ImageView(ApplicationProvider.getApplicationContext())
+        mPresenter.onTapAddToCart(tappedBurger, imageView)
+
+        verify {
+            mView.navigateToBurgerDetailsScreen(tappedBurger.burgerId, imageView)
+        }
+    }
+
+    @Test
+    fun onUIReady_callDisplayBurgerList_callDisplayCountInCart(){
+        val lifeCycleOwner = mock(LifecycleOwner::class.java)
+        val lifecycleRegistry = LifecycleRegistry(lifeCycleOwner)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        `when`(lifeCycleOwner.lifecycle).thenReturn(lifecycleRegistry)
+        mPresenter.onUIReady(lifeCycleOwner)
+        verify {
+            mView.displayBurgerList(getDummyBurgers())
+        }
     }
 }
