@@ -33,6 +33,7 @@
             android:theme="@style/Theme.MaterialComponents.Light.NoActionBar">
 
         </activity>
+        <activity android:name=".activities.GameActivity"></activity>
     </application>
 
 </manifest>
